@@ -1,4 +1,4 @@
-From 1106cc5afb2f7db4ca9dc6359952766226a2fe67 Mon Sep 17 00:00:00 2001
+From 710646309780d1a59cbeae7e4bfa92068364aa67 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Jonas=20Dre=C3=9Fler?= <verdre@v0yd.nl>
 Date: Tue, 3 Nov 2020 13:28:04 +0100
 Subject: [PATCH] mwifiex: Add quirk resetting the PCI bridge on MS Surface
@@ -32,11 +32,11 @@ Patchset: mwifiex
  3 files changed, 31 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/net/wireless/marvell/mwifiex/pcie.c b/drivers/net/wireless/marvell/mwifiex/pcie.c
-index 5f997becd..9a9929424 100644
+index 6697132ecc97..f06b4ebc5bd8 100644
 --- a/drivers/net/wireless/marvell/mwifiex/pcie.c
 +++ b/drivers/net/wireless/marvell/mwifiex/pcie.c
-@@ -1702,9 +1702,21 @@ mwifiex_pcie_send_boot_cmd(struct mwifiex_adapter *adapter, struct sk_buff *skb)
- static void mwifiex_pcie_init_fw_port(struct mwifiex_adapter *adapter)
+@@ -1771,9 +1771,21 @@ mwifiex_pcie_send_boot_cmd(struct mwifiex_adapter *adapter, struct sk_buff *skb)
+ static int mwifiex_pcie_init_fw_port(struct mwifiex_adapter *adapter)
  {
  	struct pcie_service_card *card = adapter->card;
 +	struct pci_dev *pdev = card->dev;
@@ -55,10 +55,10 @@ index 5f997becd..9a9929424 100644
 +		pci_reset_function(parent_pdev);
 +
  	/* Write the RX ring read pointer in to reg->rx_rdptr */
- 	mwifiex_write_reg(adapter, reg->rx_rdptr, card->rxbd_rdptr | tx_wrap);
- }
+ 	if (mwifiex_write_reg(adapter, reg->rx_rdptr, card->rxbd_rdptr |
+ 			      tx_wrap)) {
 diff --git a/drivers/net/wireless/marvell/mwifiex/pcie_quirks.c b/drivers/net/wireless/marvell/mwifiex/pcie_quirks.c
-index dd6d21f1d..f46b06f8d 100644
+index dd6d21f1dbfd..f46b06f8d643 100644
 --- a/drivers/net/wireless/marvell/mwifiex/pcie_quirks.c
 +++ b/drivers/net/wireless/marvell/mwifiex/pcie_quirks.c
 @@ -13,7 +13,8 @@ static const struct dmi_system_id mwifiex_quirk_table[] = {
@@ -151,7 +151,7 @@ index dd6d21f1d..f46b06f8d 100644
  
  static void mwifiex_pcie_set_power_d3cold(struct pci_dev *pdev)
 diff --git a/drivers/net/wireless/marvell/mwifiex/pcie_quirks.h b/drivers/net/wireless/marvell/mwifiex/pcie_quirks.h
-index d6ff964ae..5d30ae39d 100644
+index d6ff964aec5b..5d30ae39d65e 100644
 --- a/drivers/net/wireless/marvell/mwifiex/pcie_quirks.h
 +++ b/drivers/net/wireless/marvell/mwifiex/pcie_quirks.h
 @@ -4,6 +4,7 @@
@@ -163,9 +163,9 @@ index d6ff964ae..5d30ae39d 100644
  void mwifiex_initialize_quirks(struct pcie_service_card *card);
  int mwifiex_pcie_reset_d3cold_quirk(struct pci_dev *pdev);
 -- 
-2.52.0
+2.44.0
 
-From edf9836d0f1d0eea5c98fd1e6de91da2c22472ad Mon Sep 17 00:00:00 2001
+From d10371a089a968b913b9413e1f06bd3d9d154b21 Mon Sep 17 00:00:00 2001
 From: Tsuchiya Yuto <kitakar@gmail.com>
 Date: Sun, 4 Oct 2020 00:11:49 +0900
 Subject: [PATCH] mwifiex: pcie: disable bridge_d3 for Surface gen4+
@@ -187,10 +187,10 @@ Patchset: mwifiex
  3 files changed, 27 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/net/wireless/marvell/mwifiex/pcie.c b/drivers/net/wireless/marvell/mwifiex/pcie.c
-index 9a9929424..2273e3029 100644
+index f06b4ebc5bd8..07f13b52ddb9 100644
 --- a/drivers/net/wireless/marvell/mwifiex/pcie.c
 +++ b/drivers/net/wireless/marvell/mwifiex/pcie.c
-@@ -377,6 +377,7 @@ static int mwifiex_pcie_probe(struct pci_dev *pdev,
+@@ -370,6 +370,7 @@ static int mwifiex_pcie_probe(struct pci_dev *pdev,
  					const struct pci_device_id *ent)
  {
  	struct pcie_service_card *card;
@@ -198,7 +198,7 @@ index 9a9929424..2273e3029 100644
  	int ret;
  
  	pr_debug("info: vendor=0x%4.04X device=0x%4.04X rev=%d\n",
-@@ -418,6 +419,12 @@ static int mwifiex_pcie_probe(struct pci_dev *pdev,
+@@ -411,6 +412,12 @@ static int mwifiex_pcie_probe(struct pci_dev *pdev,
  		return -1;
  	}
  
@@ -212,7 +212,7 @@ index 9a9929424..2273e3029 100644
  }
  
 diff --git a/drivers/net/wireless/marvell/mwifiex/pcie_quirks.c b/drivers/net/wireless/marvell/mwifiex/pcie_quirks.c
-index f46b06f8d..99b024ecb 100644
+index f46b06f8d643..99b024ecbade 100644
 --- a/drivers/net/wireless/marvell/mwifiex/pcie_quirks.c
 +++ b/drivers/net/wireless/marvell/mwifiex/pcie_quirks.c
 @@ -14,7 +14,8 @@ static const struct dmi_system_id mwifiex_quirk_table[] = {
@@ -306,7 +306,7 @@ index f46b06f8d..99b024ecb 100644
  
  static void mwifiex_pcie_set_power_d3cold(struct pci_dev *pdev)
 diff --git a/drivers/net/wireless/marvell/mwifiex/pcie_quirks.h b/drivers/net/wireless/marvell/mwifiex/pcie_quirks.h
-index 5d30ae39d..c14eb56eb 100644
+index 5d30ae39d65e..c14eb56eb911 100644
 --- a/drivers/net/wireless/marvell/mwifiex/pcie_quirks.h
 +++ b/drivers/net/wireless/marvell/mwifiex/pcie_quirks.h
 @@ -5,6 +5,7 @@
@@ -318,9 +318,9 @@ index 5d30ae39d..c14eb56eb 100644
  void mwifiex_initialize_quirks(struct pcie_service_card *card);
  int mwifiex_pcie_reset_d3cold_quirk(struct pci_dev *pdev);
 -- 
-2.52.0
+2.44.0
 
-From 8f4b822de3c6817607f9c893d541fff7328ea1e4 Mon Sep 17 00:00:00 2001
+From 59d4464c43b8c4090372cbf2632fc116a0ca8b2a Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Jonas=20Dre=C3=9Fler?= <verdre@v0yd.nl>
 Date: Thu, 25 Mar 2021 11:33:02 +0100
 Subject: [PATCH] Bluetooth: btusb: Lower passive lescan interval on Marvell
@@ -356,10 +356,11 @@ Patchset: mwifiex
  1 file changed, 15 insertions(+)
 
 diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index 603ff13d9..9209e8e29 100644
+index 66080fae072f..68e2f2976a51 100644
 --- a/drivers/bluetooth/btusb.c
 +++ b/drivers/bluetooth/btusb.c
-@@ -66,6 +66,7 @@ static struct usb_driver btusb_driver;
+@@ -65,7 +65,8 @@ static struct usb_driver btusb_driver;
+ #define BTUSB_INTEL_BROKEN_INITIAL_NCMD BIT(25)
  #define BTUSB_INTEL_NO_WBS_SUPPORT	BIT(26)
  #define BTUSB_ACTIONS_SEMI		BIT(27)
  #define BTUSB_BARROT			BIT(28)
@@ -367,7 +368,7 @@ index 603ff13d9..9209e8e29 100644
  
  static const struct usb_device_id btusb_table[] = {
  	/* Generic Bluetooth USB device */
-@@ -469,6 +470,7 @@ static const struct usb_device_id quirks_table[] = {
+@@ -468,6 +469,7 @@ static const struct usb_device_id quirks_table[] = {
  	{ USB_DEVICE(0x1286, 0x2044), .driver_info = BTUSB_MARVELL },
  	{ USB_DEVICE(0x1286, 0x2046), .driver_info = BTUSB_MARVELL },
  	{ USB_DEVICE(0x1286, 0x204e), .driver_info = BTUSB_MARVELL },
@@ -375,7 +376,7 @@ index 603ff13d9..9209e8e29 100644
  
  	/* Intel Bluetooth devices */
  	{ USB_DEVICE(0x8087, 0x0025), .driver_info = BTUSB_INTEL_COMBINED },
-@@ -4009,6 +4011,19 @@ static int btusb_probe(struct usb_interface *intf,
+@@ -4395,6 +4397,19 @@ static int btusb_probe(struct usb_interface *intf,
  	if (id->driver_info & BTUSB_MARVELL)
  		hdev->set_bdaddr = btusb_set_bdaddr_marvell;
  
@@ -396,5 +397,5 @@ index 603ff13d9..9209e8e29 100644
  	    (id->driver_info & BTUSB_MEDIATEK)) {
  		hdev->setup = btusb_mtk_setup;
 -- 
-2.52.0
+2.44.0
 

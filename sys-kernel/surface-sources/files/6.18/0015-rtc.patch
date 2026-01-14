@@ -1,4 +1,4 @@
-From d5457f13b006eebde52dc706320ea546cdc0c9a0 Mon Sep 17 00:00:00 2001
+From 0dfdb22b626f288d56d9a41530ccdfb84a8baa47 Mon Sep 17 00:00:00 2001
 From: "Bart Groeneveld | GPX Solutions B.V" <bart@gpxbv.nl>
 Date: Mon, 5 Dec 2022 16:08:46 +0100
 Subject: [PATCH] acpi: allow usage of acpi_tad on HW-reduced platforms
@@ -21,7 +21,7 @@ Patchset: rtc
  1 file changed, 24 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/acpi/acpi_tad.c b/drivers/acpi/acpi_tad.c
-index 33418dd6768a..f94bbdc1de06 100644
+index 33418dd67..f94bbdc1d 100644
 --- a/drivers/acpi/acpi_tad.c
 +++ b/drivers/acpi/acpi_tad.c
 @@ -433,6 +433,14 @@ static ssize_t caps_show(struct device *dev, struct device_attribute *attr,
