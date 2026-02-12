@@ -1,4 +1,4 @@
-From 30529332e1f6cc038e52456946a4d8b20864bc7d Mon Sep 17 00:00:00 2001
+From 9593c516ab9ffbaf6f3579fa9b4847334a06bedb Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Jonas=20Dre=C3=9Fler?= <verdre@v0yd.nl>
 Date: Tue, 3 Nov 2020 13:28:04 +0100
 Subject: [PATCH] mwifiex: Add quirk resetting the PCI bridge on MS Surface
@@ -165,7 +165,7 @@ index d6ff964ae..5d30ae39d 100644
 -- 
 2.52.0
 
-From 87a78acab5967185d744bc20b50b817347ace0c4 Mon Sep 17 00:00:00 2001
+From 9cfa9e79bfab86b0dd006db23b8f4578d3793f79 Mon Sep 17 00:00:00 2001
 From: Tsuchiya Yuto <kitakar@gmail.com>
 Date: Sun, 4 Oct 2020 00:11:49 +0900
 Subject: [PATCH] mwifiex: pcie: disable bridge_d3 for Surface gen4+
@@ -320,7 +320,7 @@ index 5d30ae39d..c14eb56eb 100644
 -- 
 2.52.0
 
-From 5688a8233080b57b7d7f2fe5ce8d9abc04f4c9da Mon Sep 17 00:00:00 2001
+From 8f1c63004d0669c9026ebf2c888a7aec4ee9956f Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Jonas=20Dre=C3=9Fler?= <verdre@v0yd.nl>
 Date: Thu, 25 Mar 2021 11:33:02 +0100
 Subject: [PATCH] Bluetooth: btusb: Lower passive lescan interval on Marvell

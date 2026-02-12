@@ -32,6 +32,7 @@ src_prepare() {
 	eapply "${FILESDIR}/6.18/0014-amd-gpio.patch"
 	eapply "${FILESDIR}/6.18/0015-rtc.patch"
 	eapply "${FILESDIR}/6.18/0016-hid-surface.patch"
+	eapply "${FILESDIR}/6.18/0017-powercap.patch"
 	eapply_user
 }
 
