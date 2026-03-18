@@ -1,4 +1,4 @@
-From 10da29a50dc86540c5162137ed52c5c99823b185 Mon Sep 17 00:00:00 2001
+From 55e86797e434d35ad49d5fc5ffbc8c17f4bc1404 Mon Sep 17 00:00:00 2001
 From: Dorian Stoll <dorian.stoll@tmsp.io>
 Date: Sun, 11 Dec 2022 12:03:38 +0100
 Subject: [PATCH] iommu: intel: Disable source id verification for ITHC
@@ -10,7 +10,7 @@ Patchset: ithc
  1 file changed, 16 insertions(+)
 
 diff --git a/drivers/iommu/intel/irq_remapping.c b/drivers/iommu/intel/irq_remapping.c
-index 066e4cd6e..7b320d09d 100644
+index 8bcbfe3d9..c78806d35 100644
 --- a/drivers/iommu/intel/irq_remapping.c
 +++ b/drivers/iommu/intel/irq_remapping.c
 @@ -381,6 +381,22 @@ static int set_msi_sid(struct irte *irte, struct pci_dev *dev)
@@ -39,7 +39,7 @@ index 066e4cd6e..7b320d09d 100644
 -- 
 2.53.0
 
-From db66ed7a0570276e8d561777fa3ba2f97bd449c6 Mon Sep 17 00:00:00 2001
+From 1cf2103b5e8668521b74da4136e06ee5a17144f3 Mon Sep 17 00:00:00 2001
 From: quo <tuple@list.ru>
 Date: Sun, 11 Dec 2022 12:10:54 +0100
 Subject: [PATCH] hid: Add support for Intel Touch Host Controller
@@ -61,13 +61,13 @@ Patchset: ithc
  drivers/hid/ithc/ithc-hid.h      |  32 ++
  drivers/hid/ithc/ithc-legacy.c   | 254 +++++++++++++
  drivers/hid/ithc/ithc-legacy.h   |   8 +
- drivers/hid/ithc/ithc-main.c     | 431 ++++++++++++++++++++++
+ drivers/hid/ithc/ithc-main.c     | 438 ++++++++++++++++++++++
  drivers/hid/ithc/ithc-quickspi.c | 607 +++++++++++++++++++++++++++++++
  drivers/hid/ithc/ithc-quickspi.h |  39 ++
  drivers/hid/ithc/ithc-regs.c     | 154 ++++++++
  drivers/hid/ithc/ithc-regs.h     | 211 +++++++++++
  drivers/hid/ithc/ithc.h          |  89 +++++
- 18 files changed, 2568 insertions(+)
+ 18 files changed, 2575 insertions(+)
  create mode 100644 drivers/hid/ithc/Kbuild
  create mode 100644 drivers/hid/ithc/Kconfig
  create mode 100644 drivers/hid/ithc/ithc-debug.c
@@ -86,22 +86,24 @@ Patchset: ithc
  create mode 100644 drivers/hid/ithc/ithc.h
 
 diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 4ce843941..b051b7068 100644
+index 5d41410ac..fb65f49b5 100644
 --- a/drivers/hid/Kconfig
 +++ b/drivers/hid/Kconfig
-@@ -1391,4 +1391,6 @@ source "drivers/hid/surface-hid/Kconfig"
+@@ -1445,6 +1445,8 @@ source "drivers/hid/intel-thc-hid/Kconfig"
  
  source "drivers/hid/ipts/Kconfig"
  
 +source "drivers/hid/ithc/Kconfig"
 +
- endif # HID_SUPPORT
+ endif # HID
+ 
+ # USB support may be used with HID disabled
 diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index 15a67dc83..fcbc18ceb 100644
+index b73a1bbd3..3190ece25 100644
 --- a/drivers/hid/Makefile
 +++ b/drivers/hid/Makefile
-@@ -172,3 +172,4 @@ obj-$(CONFIG_AMD_SFH_HID)       += amd-sfh-hid/
- obj-$(CONFIG_SURFACE_HID_CORE)  += surface-hid/
+@@ -178,3 +178,4 @@ obj-$(CONFIG_SURFACE_HID_CORE)  += surface-hid/
+ obj-$(CONFIG_INTEL_THC_HID)     += intel-thc-hid/
  
  obj-$(CONFIG_HID_IPTS)          += ipts/
 +obj-$(CONFIG_HID_ITHC)          += ithc/
@@ -1201,10 +1203,10 @@ index 000000000..28d692462
 +
 diff --git a/drivers/hid/ithc/ithc-main.c b/drivers/hid/ithc/ithc-main.c
 new file mode 100644
-index 000000000..ac56c2536
+index 000000000..094d878d6
 --- /dev/null
 +++ b/drivers/hid/ithc/ithc-main.c
-@@ -0,0 +1,431 @@
+@@ -0,0 +1,438 @@
 +// SPDX-License-Identifier: GPL-2.0 OR BSD-2-Clause
 +
 +#include "ithc.h"
@@ -1213,14 +1215,21 @@ index 000000000..ac56c2536
 +MODULE_LICENSE("Dual BSD/GPL");
 +
 +static const struct pci_device_id ithc_pci_tbl[] = {
-+	{
-+		.vendor = PCI_VENDOR_ID_INTEL,
-+		.device = PCI_ANY_ID,
-+		.subvendor = PCI_ANY_ID,
-+		.subdevice = PCI_ANY_ID,
-+		.class = PCI_CLASS_INPUT_PEN << 8,
-+		.class_mask = ~0,
-+	},
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_THC_LKF_PORT1) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_THC_LKF_PORT2) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_THC_TGL_LP_PORT1) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_THC_TGL_LP_PORT2) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_THC_TGL_H_PORT1) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_THC_TGL_H_PORT2) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_THC_ADL_S_PORT1) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_THC_ADL_S_PORT2) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_THC_ADL_P_PORT1) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_THC_ADL_P_PORT2) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_THC_ADL_M_PORT1) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_THC_ADL_M_PORT2) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_THC_RPL_S_PORT1) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_THC_RPL_S_PORT2) },
++	// MTL and up are handled by drivers/hid/intel-thc-hid
 +	{}
 +};
 +MODULE_DEVICE_TABLE(pci, ithc_pci_tbl);
@@ -1444,7 +1453,7 @@ index 000000000..ac56c2536
 +	else
 +		ithc_legacy_exit(ithc);
 +	ithc_disable(ithc);
-+	del_timer_sync(&ithc->idle_timer);
++	timer_delete_sync(&ithc->idle_timer);
 +
 +	// Clear DMA config.
 +	for (unsigned int i = 0; i < 2; i++) {
