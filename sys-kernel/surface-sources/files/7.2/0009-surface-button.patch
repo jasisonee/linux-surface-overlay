@@ -1,4 +1,4 @@
-From da7cd214e4a45c233a6be4a97449030592d005e1 Mon Sep 17 00:00:00 2001
+From dcec7553c69284be052139cc224651ca72951e3d Mon Sep 17 00:00:00 2001
 From: Sachi King <nakato@nakato.io>
 Date: Tue, 5 Oct 2021 00:05:09 +1100
 Subject: [PATCH] Input: soc_button_array - support AMD variant Surface devices
@@ -20,7 +20,7 @@ Patchset: surface-button
  1 file changed, 8 insertions(+), 25 deletions(-)
 
 diff --git a/drivers/input/misc/soc_button_array.c b/drivers/input/misc/soc_button_array.c
-index b8cad415c..43b5d5638 100644
+index b8cad415c62c..43b5d56383e3 100644
 --- a/drivers/input/misc/soc_button_array.c
 +++ b/drivers/input/misc/soc_button_array.c
 @@ -540,8 +540,8 @@ static const struct soc_device_data soc_device_MSHW0028 = {
@@ -73,9 +73,9 @@ index b8cad415c..43b5d5638 100644
  
  /*
 -- 
-2.53.0
+2.55.0
 
-From 3ec94f2758eaae1d2d7e84e2205ff5ad2c582ae1 Mon Sep 17 00:00:00 2001
+From 78efa60adbe484bf11e2a0f0bf19dfd61b432a74 Mon Sep 17 00:00:00 2001
 From: Sachi King <nakato@nakato.io>
 Date: Tue, 5 Oct 2021 00:22:57 +1100
 Subject: [PATCH] platform/surface: surfacepro3_button: don't load on amd
@@ -92,14 +92,14 @@ Co-developed-by: Maximilian Luz <luzmaximilian@gmail.com>
 Signed-off-by: Sachi King <nakato@nakato.io>
 Patchset: surface-button
 ---
- drivers/platform/surface/surfacepro3_button.c | 30 ++++---------------
- 1 file changed, 6 insertions(+), 24 deletions(-)
+ drivers/platform/surface/surfacepro3_button.c | 31 ++++---------------
+ 1 file changed, 6 insertions(+), 25 deletions(-)
 
 diff --git a/drivers/platform/surface/surfacepro3_button.c b/drivers/platform/surface/surfacepro3_button.c
-index 2755601f9..4240c98ca 100644
+index 388a3e1a488c..f94510dbda44 100644
 --- a/drivers/platform/surface/surfacepro3_button.c
 +++ b/drivers/platform/surface/surfacepro3_button.c
-@@ -149,7 +149,8 @@ static int surface_button_resume(struct device *dev)
+@@ -149,37 +149,18 @@ static int surface_button_resume(struct device *dev)
  /*
   * Surface Pro 4 and Surface Book 2 / Surface Pro 2017 use the same device
   * ID (MSHW0040) for the power/volume buttons. Make sure this is the right
@@ -109,10 +109,9 @@ index 2755601f9..4240c98ca 100644
   *
   * Returns true if the driver should bind to this device, i.e. the device is
   * either MSWH0028 (Pro 3) or MSHW0040 on a Pro 4 or Book 1.
-@@ -157,30 +158,11 @@ static int surface_button_resume(struct device *dev)
- static bool surface_button_check_MSHW0040(struct acpi_device *dev)
+  */
+ static bool surface_button_check_MSHW0040(struct device *dev, acpi_handle handle)
  {
- 	acpi_handle handle = dev->handle;
 -	union acpi_object *result;
 -	u64 oem_platform_rev = 0;	// valid revisions are nonzero
 -
@@ -134,8 +133,8 @@ index 2755601f9..4240c98ca 100644
 -		ACPI_FREE(result);
 -	}
 -
--	dev_dbg(&dev->dev, "OEM Platform Revision %llu\n", oem_platform_rev);
- 
+-	dev_dbg(dev, "OEM Platform Revision %llu\n", oem_platform_rev);
+-
 -	return oem_platform_rev == 0;
 +	// make sure that OEM platform revision DSM call does not exist
 +	return !acpi_check_dsm(handle, &MSHW0040_DSM_UUID,
@@ -145,5 +144,5 @@ index 2755601f9..4240c98ca 100644
  
  
 -- 
-2.53.0
+2.55.0
 
